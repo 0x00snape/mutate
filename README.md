@@ -8,6 +8,10 @@ Mutate is a program which modify the code at run-time and propagate itself into 
 Mutate has successfully embedded itself into the hello program and overwrite it with morphed version of itself also hides the original hello binary. On each runtime generates a unique hash due to binary changes and runs the original hello executable from its hidden binary. On each propagation it uses unique version of the morphed code. 
 
 ```bash
+:$ ls -la
+-rwxr-xr-x  1 3926856 Mar 12 18:26 hello
+-rwxr-xr-x  1 374296 Mar 12 18:26 mutate
+
 :$ shasum mutate hello 
 fd0ab851b9856c192eceeac65b071a9c5a4073c6  mutate
 0d09428faeeface8a0a7b0d96047ef8aa6d3147a  hello
